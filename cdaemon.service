@@ -2,4 +2,4 @@
 Description=Device monitoring service
 
 [Service]
-ExecStart=/home/studentas/projects/CDaemon/cdaemon
+ExecStart=/usr/local/bin/cdaemon
