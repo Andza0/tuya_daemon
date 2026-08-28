@@ -1,1 +1,0 @@
-/usr/bin/cc -rdynamic CMakeFiles/ota_basic_demo.dir/ota_basic_demo.c.o -o ../../bin/ota_basic_demo  -Wl,-rpath,/home/studentas/projects/CDaemon/SDK/build/lib ../../lib/libutils_modules.a ../../lib/libplatform_port.a ../../lib/liblink_core.a ../../lib/libmiddleware_implementation.so ../../lib/libplatform_port.a ../../lib/libutils_modules.a 
