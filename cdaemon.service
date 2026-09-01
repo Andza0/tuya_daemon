@@ -2,4 +2,4 @@
 Description=Device monitoring service
 
 [Service]
-ExecStart=/usr/local/bin/cdaemon
+ExecStart=/usr/local/bin/cdaemon -p b5lviadl7bzxzm3y -d 2622d2dd1a1bdae547xlwb -s SSdyXu64UJ0COu3g
