@@ -51,6 +51,19 @@ int main(int argc, char *argv[]){
     time_t last_report = 0;
     time_t now;
     char data[64];
+    struct ifaddrs *addrs = malloc(sizeof(struct ifaddrs));
+
+    int ifaddrsret = 0;
+    if(addrs == NULL){
+        system_log(1, "Unable to allocate memory for interfaces");
+        ifaddrsret = -1;
+    }
+    else{
+        ifaddrsret = getifaddrs(&addrs);
+        if(ret != 0){
+            system_log(1, "Unable to get information for interfaces");
+        }
+    }
     for (;;)
     {
         now = time(NULL);
@@ -62,7 +75,13 @@ int main(int argc, char *argv[]){
             else{
                 ret = send_reports(&client, info, now);
                 if(ret != 1){
-                    system_log(1, "Failed to send report");
+                    system_log(1, "Failed to send sysinfo report");
+                }
+                if(ifaddrsret == 0){
+                    ret = send_interface_reports(&client, addrs, now);
+                    if(ret != 1){
+                        system_log(1, "Failed to send interface report");
+                    }
                 }
             }
             last_report = now;
@@ -74,6 +93,10 @@ int main(int argc, char *argv[]){
     if(info != NULL){
         system_log(6, "Freeing system info memory.. ");
         free(info);
+    }
+    if(addrs != NULL){
+        system_log(6, "Freeing network interface memory.. ");
+        free(addrs);
     }
     tuya_mqtt_deinit(&client);
     return 0;

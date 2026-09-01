@@ -40,7 +40,7 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
     long tx_bytes;
 
     char data[64];
-    for(struct ifaddrs *i = ifa; i->ifa_next != NULL; i = i->ifa_next){
+    for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
         rx_bytes = get_rxtx(RX_BYTES, i);
         tx_bytes = get_rxtx(TX_BYTES, i);
 
@@ -51,10 +51,12 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
         i->ifa_name,
         now);
         
-        
+        int ret = tuyalink_thing_property_report(client, NULL, data);
+        if(ret >= 0){
+            return ret;
+        }
     }
-
-
+    return 1;
 }
 
 int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now)
