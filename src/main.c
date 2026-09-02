@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -8,8 +9,12 @@
 #include "tuya_handle.h"
 #include "arg_parse.h"
 #include "log_wrapper.h"
+#include <signal.h>
 
+void sig_handler(int signum);
+void prepare_sig_handler(void);
 
+sig_atomic_t sig_flag = 0;
 
 int main(int argc, char *argv[]){
 
@@ -64,7 +69,7 @@ int main(int argc, char *argv[]){
             system_log(1, "Unable to get information for interfaces");
         }
     }
-    for (;;)
+    while (sig_flag != 1)
     {
         now = time(NULL);
         if((now - last_report) > 10){
@@ -72,7 +77,7 @@ int main(int argc, char *argv[]){
             if(ret != 0){
                 system_log(1, "Cannot read data from sys info");
             }
-            else{
+            else if(ret == 0){
                 ret = send_reports(&client, info, now);
                 if(ret != 1){
                     system_log(1, "Failed to send sysinfo report");
@@ -100,4 +105,19 @@ int main(int argc, char *argv[]){
     }
     tuya_mqtt_deinit(&client);
     return 0;
+}
+
+void prepare_sig_handler(void)
+{
+    struct sigaction sig;
+    sig.sa_handler = &sig_handler;
+
+    sigaction(SIGINT, &sig, NULL);
+    sigaction(SIGTERM, &sig, NULL);
+    sigaction(SIGQUIT, &sig, NULL);
+}
+
+void sig_handler(int signum)
+{
+    sig_flag = 1;
 }

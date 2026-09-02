@@ -41,6 +41,9 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
 
     char data[64];
     for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
+        if(strcmp(i->ifa_name, "lo") == 0){
+            continue;
+        }
         rx_bytes = get_rxtx(RX_BYTES, i);
         tx_bytes = get_rxtx(TX_BYTES, i);
 

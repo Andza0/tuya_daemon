@@ -9,8 +9,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
     struct dirent *entry;
     while((entry = readdir(dirp)) != NULL)
     {   
-        printf("%s %ld\n", ifa->ifa_name, strlen(ifa->ifa_name));
-        if(strcmp(entry->d_name, ifa->ifa_name) == 0 && strcmp(ifa->ifa_name, "lo") != 0){
+        if(strcmp(entry->d_name, ifa->ifa_name) == 0){
             size_t pathsz = 64 + strlen(entry->d_name);
             char path[pathsz];
             snprintf(path, pathsz, "/sys/class/net/%s/statistics", entry->d_name);
@@ -45,6 +44,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
             long ret = strtol(line, &end, 10);
             if(line != end){
                 closedir(dirp);
+                fclose(data_file);
                 return ret;
             }
         }
