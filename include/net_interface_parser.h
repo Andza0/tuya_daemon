@@ -9,6 +9,7 @@
 #define UNKNOWN_TYPE -1
 #define OPENDIR_ERR -2
 #define OPENFILE_ERR -3
+#define LINE_RET_NULL -4
 
 #include <sys/types.h>
 #include <ifaddrs.h>

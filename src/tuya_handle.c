@@ -39,24 +39,46 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
     long rx_bytes;
     long tx_bytes;
 
-    char data[64];
+    char data[64 * 4];
     for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
         if(strcmp(i->ifa_name, "lo") == 0){
             continue;
         }
+
+
         rx_bytes = get_rxtx(RX_BYTES, i);
         tx_bytes = get_rxtx(TX_BYTES, i);
 
         snprintf(data, sizeof(data),
         "{"
-        "\"in\":{\"value\":%s,\"time\":%ld},"
+        "\"in\":{\"value\":\"%s\",\"time\":%ld},"
+        "\"rx\":{\"value\":%ld,\"time\":%ld},"
+        "\"tx\":{\"value\":%ld,\"time\":%ld},"
+        "\"ip\":{\"value\":\"%s\",\"time\":%ld},"
         "}",
         i->ifa_name,
+        now,
+        (rx_bytes / (1024 * 1024)),
+        now,
+        (tx_bytes / (1024 * 1024)),
+        now,
+        i->ifa_addr->sa_data,
         now);
         
         int ret = tuyalink_thing_property_report(client, NULL, data);
-        if(ret >= 0){
-            return ret;
+        switch (ret)
+        {
+            case OPRT_LINK_CORE_MQTT_PUBLISH_ERROR:
+                return ret;
+                break;
+            case OPRT_INVALID_PARM:
+                return ret;
+                break;
+            case OPRT_MALLOC_FAILED:
+                return ret;
+                break;
+            default:
+                break;
         }
     }
     return 1;

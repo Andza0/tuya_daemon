@@ -29,7 +29,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
                 return UNKNOWN_TYPE;
             }
 
-            size_t filepathsz = strlen(path) + strlen(filename) + 1;
+            size_t filepathsz = strlen(path) + strlen(filename) + 2;
             char filepath[filepathsz];
             snprintf(filepath, filepathsz, "%s/%s", path, filename);
             FILE *data_file = fopen(filepath, "r");
@@ -37,9 +37,13 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
                 return OPENFILE_ERR;
             }
 
-            char *line;
             size_t linesz = 32;
-            line = fgets(line, linesz, data_file);
+            char line[linesz];
+            if(fgets(line, linesz, data_file) == NULL){
+                closedir(dirp);
+                fclose(data_file);
+                return LINE_RET_NULL;
+            }
             char *end;
             long ret = strtol(line, &end, 10);
             if(line != end){
