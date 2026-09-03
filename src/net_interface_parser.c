@@ -34,12 +34,15 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
             snprintf(filepath, filepathsz, "%s/%s", path, filename);
             FILE *data_file = fopen(filepath, "r");
             if(data_file == NULL){
+                closedir(data_dir);
+                closedir(dirp);
                 return OPENFILE_ERR;
             }
 
             size_t linesz = 32;
             char line[linesz];
             if(fgets(line, linesz, data_file) == NULL){
+                closedir(data_dir);
                 closedir(dirp);
                 fclose(data_file);
                 return LINE_RET_NULL;
@@ -47,6 +50,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
             char *end;
             long ret = strtol(line, &end, 10);
             if(line != end){
+                closedir(data_dir);
                 closedir(dirp);
                 fclose(data_file);
                 return ret;

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 long get_rxtx(int rxtx, struct ifaddrs *ifa);
 

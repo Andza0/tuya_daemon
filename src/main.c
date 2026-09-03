@@ -10,6 +10,7 @@
 #include "arg_parse.h"
 #include "log_wrapper.h"
 #include <signal.h>
+#include "cpu_monitoring.h"
 
 void sig_handler(int signum);
 void prepare_sig_handler(void);
@@ -52,42 +53,65 @@ int main(int argc, char *argv[]){
     ret = tuya_mqtt_connect(&client);
     assert(ret == OPRT_OK);
 
+    int inforet = 0;
     struct sysinfo *info = malloc(1 * sizeof(struct sysinfo));
-    time_t last_report = 0;
-    time_t now;
-    char data[64];
-    struct ifaddrs *addrs = malloc(sizeof(struct ifaddrs));
+    if(info == NULL){
+        system_log(1, "Unable to allocate memory for system info");
+        inforet = -1;
+    }
+
+    struct ifaddrs *addrs = NULL;
 
     int ifaddrsret = 0;
-    if(addrs == NULL){
-        system_log(1, "Unable to allocate memory for interfaces");
-        ifaddrsret = -1;
+    ifaddrsret = getifaddrs(&addrs);
+    if(ifaddrsret == -1){
+        system_log(1, "Unable to get information for interfaces");
     }
-    else{
-        ifaddrsret = getifaddrs(&addrs);
-        if(ret != 0){
-            system_log(1, "Unable to get information for interfaces");
-        }
-    }
+    
+    struct cpu_stats *old = malloc(sizeof(struct cpu_stats));
+    struct cpu_stats *new = malloc(sizeof(struct cpu_stats));
+    struct cpu_usage *usage = malloc(sizeof(struct cpu_usage));
+
+    ret = read_cpu_stats(old);
+    if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+
+    time_t last_report = 0;
+    time_t now;
+
     while (sig_flag != 1)
     {
         now = time(NULL);
-        if((now - last_report) > 10){
+
+        if((now - last_report) < 10){
+            continue;
+        }
+
+        ret = read_cpu_stats(new); //CPU usage report
+        if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+        else{
+            calc_cpu_usage(old, new, usage);
+            send_cpu_usage_reports(&client, usage, now);
+            *old = *new;
+        }
+
+
+        if(inforet == 0){ //sysinfo report
             ret = sysinfo(info);
             if(ret != 0){
                 system_log(1, "Cannot read data from sys info");
             }
-            else if(ret == 0){
+            else{
                 ret = send_reports(&client, info, now);
-                if(ret != 1){
+                if(ret >= 0){
                     system_log(1, "Failed to send sysinfo report");
                 }
-                if(ifaddrsret == 0){
-                    ret = send_interface_reports(&client, addrs, now);
-                    if(ret != 1){
-                        system_log(1, "Failed to send interface report");
-                    }
-                }
+            }
+        }
+
+        if(ifaddrsret == 0){ //network interface report
+            ret = send_interface_reports(&client, addrs, now);
+            if(ret >= 0){
+                system_log(1, "Failed to send interface report");
             }
             last_report = now;
         }
@@ -99,18 +123,17 @@ int main(int argc, char *argv[]){
         system_log(6, "Freeing system info memory.. ");
         free(info);
     }
-    if(addrs != NULL){
-        system_log(6, "Freeing network interface memory.. ");
-        free(addrs);
-    }
+    freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
     return 0;
 }
 
 void prepare_sig_handler(void)
 {
-    struct sigaction sig;
+    struct sigaction sig = {0};
     sig.sa_handler = &sig_handler;
+    sigemptyset(&sig.sa_mask);
+    sig.sa_flags = 0;
 
     sigaction(SIGINT, &sig, NULL);
     sigaction(SIGTERM, &sig, NULL);

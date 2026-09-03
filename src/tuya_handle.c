@@ -1,5 +1,4 @@
 #include "tuya_handle.h"
-#include "net_interface_parser.h"
 
 void on_connected(tuya_mqtt_context_t* context, void* user_data)
 {
@@ -39,68 +38,70 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
     long rx_bytes;
     long tx_bytes;
 
-    char data[64 * 4];
+    int linescount = 5;
+    char data[64 * linescount];
     for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
-        if(strcmp(i->ifa_name, "lo") == 0){
+        if(strcmp(i->ifa_name, "lo") == 0 || i->ifa_addr->sa_family != AF_INET){
             continue;
         }
 
+        struct sockaddr_in *sa = (struct sockaddr_in *)i->ifa_addr;
+        char ip_string[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &sa->sin_addr, ip_string, INET_ADDRSTRLEN);
+
+        struct sockaddr_in *mask = (struct sockaddr_in *)i->ifa_netmask;
+        char mask_string[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &mask->sin_addr, mask_string, INET_ADDRSTRLEN);
 
         rx_bytes = get_rxtx(RX_BYTES, i);
         tx_bytes = get_rxtx(TX_BYTES, i);
 
         snprintf(data, sizeof(data),
-        "{"
-        "\"in\":{\"value\":\"%s\",\"time\":%ld},"
-        "\"rx\":{\"value\":%ld,\"time\":%ld},"
-        "\"tx\":{\"value\":%ld,\"time\":%ld},"
-        "\"ip\":{\"value\":\"%s\",\"time\":%ld},"
-        "}",
-        i->ifa_name,
-        now,
-        (rx_bytes / (1024 * 1024)),
-        now,
-        (tx_bytes / (1024 * 1024)),
-        now,
-        i->ifa_addr->sa_data,
-        now);
+            "{"
+            "\"in\":{\"value\":\"%s\",\"time\":%ld},"
+            "\"rx\":{\"value\":%ld,\"time\":%ld},"
+            "\"tx\":{\"value\":%ld,\"time\":%ld},"
+            "\"ip\":{\"value\":\"%s\",\"time\":%ld},"
+            "\"ms\":{\"value\":\"%s\",\"time\":%ld},"
+            "}",
+            i->ifa_name, now,
+            (rx_bytes / (1024 * 1024)), now,
+            (tx_bytes / (1024 * 1024)), now,
+            ip_string, now,
+            mask_string, now);
         
-        int ret = tuyalink_thing_property_report(client, NULL, data);
-        switch (ret)
-        {
-            case OPRT_LINK_CORE_MQTT_PUBLISH_ERROR:
-                return ret;
-                break;
-            case OPRT_INVALID_PARM:
-                return ret;
-                break;
-            case OPRT_MALLOC_FAILED:
-                return ret;
-                break;
-            default:
-                break;
-        }
+        return tuyalink_thing_property_report(client, NULL, data);
     }
     return 1;
 }
 
 int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now)
 {
-    char data[64 * 3];
+    int linescount = 3;
+    char data[64 * linescount];
     snprintf(data, sizeof(data),
-     "{"
-     "\"mt\":{\"value\":%ld,\"time\":%ld},"
-     "\"mf\":{\"value\":%ld,\"time\":%ld},"
-     "\"up\":{\"value\":\"%d:%d:%d\",\"time\":%ld}"
-     "}",
-      ((info->totalram)/ (1024 * 1024)),
-      now,
-      ((info->freeram)/(1024 * 1024)),
-       now,
-        (int)(info->uptime / 3600), (int)((info->uptime % 3600) / 60), (int)((info->uptime % 3600) % 60),
-        now);
+        "{"
+        "\"mt\":{\"value\":%ld,\"time\":%ld},"
+        "\"mf\":{\"value\":%ld,\"time\":%ld},"
+        "\"up\":{\"value\":\"%d:%d:%d\",\"time\":%ld}"
+        "}",
+        ((info->totalram)/ (1024 * 1024)), now,
+        ((info->freeram)/(1024 * 1024)), now,
+        (int)(info->uptime / 3600), (int)((info->uptime % 3600) / 60), (int)((info->uptime % 3600) % 60), now);
 
-    int ret = tuyalink_thing_property_report(client, NULL, data);
+    return tuyalink_thing_property_report(client, NULL, data);
+}
 
-    return ret >= 0 ? 1 : 0;
+int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu, time_t now)
+{
+    int linescount = 2;
+    char data[64 * linescount];
+    snprintf(data, sizeof(data),
+        "{"
+        "\"at\":{\"value\":%ld,\"time\":%ld},"
+        "\"it\":{\"value\":%ld,\"time\":%ld}"
+        "}",
+        cpu->active, now,
+        cpu->idle, now);
+    return tuyalink_thing_property_report(client, NULL, data);
 }
