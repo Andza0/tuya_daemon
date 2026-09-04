@@ -19,6 +19,7 @@ sig_atomic_t sig_flag = 0;
 
 int main(int argc, char *argv[]){
 
+    prepare_sig_handler();
     set_mask(7);
     if(argc <= 1){
         system_log(0, "Correct program launch format: -p {product id} -d {device id} -s {device secret}\n");
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]){
     assert(ret == OPRT_OK);
 
     int inforet = 0;
-    struct sysinfo *info = malloc(1 * sizeof(struct sysinfo));
+    struct sysinfo *info = malloc(sizeof(struct sysinfo));
     if(info == NULL){
         system_log(1, "Unable to allocate memory for system info");
         inforet = -1;
@@ -69,8 +70,11 @@ int main(int argc, char *argv[]){
     }
     
     struct cpu_stats *old = malloc(sizeof(struct cpu_stats));
+    assert(old != NULL);
     struct cpu_stats *new = malloc(sizeof(struct cpu_stats));
+    assert(old != NULL);
     struct cpu_usage *usage = malloc(sizeof(struct cpu_usage));
+    assert(old != NULL);
 
     ret = read_cpu_stats(old);
     if(ret != 10) {system_log(1, "Unable to read all cpu data");}
@@ -119,10 +123,14 @@ int main(int argc, char *argv[]){
     }
 
     free:
+    system_log(6, "Freeing system info memory.. ");
     if(info != NULL){
-        system_log(6, "Freeing system info memory.. ");
         free(info);
     }
+    if(old != NULL) {free(old);}
+    if(new != NULL) {free(new);}
+    if(usage != NULL) {free(usage);}
+    if(args != NULL) {free(args);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
     return 0;
