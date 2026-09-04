@@ -26,7 +26,13 @@ void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_m
 
         case THING_TYPE_PROPERTY_REPORT_RSP:
             break;
-
+        case THING_TYPE_ACTION_EXECUTE:
+            TY_LOGI("action execute:%s", msg->data_string);
+            FILE *logfp = fopen("/tmp/tuya_action.log", "a");
+            if (logfp == NULL) {TY_LOGI("Unable to open log file"); break;}
+            fprintf(logfp, "%s\n", msg->data_string);
+            fclose(logfp);
+            break;
         default:
             break;
     }

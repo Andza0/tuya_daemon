@@ -101,12 +101,12 @@ int main(int argc, char *argv[]){
 
         if(inforet == 0){ //sysinfo report
             ret = sysinfo(info);
-            if(ret != 0){
+            if(ret < 0){
                 system_log(1, "Cannot read data from sys info");
             }
             else{
                 ret = send_reports(&client, info, now);
-                if(ret >= 0){
+                if(ret < 0){
                     system_log(1, "Failed to send sysinfo report");
                 }
             }
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]){
 
         if(ifaddrsret == 0){ //network interface report
             ret = send_interface_reports(&client, addrs, now);
-            if(ret >= 0){
+            if(ret < 0){
                 system_log(1, "Failed to send interface report");
             }
             last_report = now;
