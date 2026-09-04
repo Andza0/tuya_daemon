@@ -16,7 +16,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             arguments->deviceSecret = arg;
             break;
         case 'f':
-            arguments->daemon = arg;
+            arguments->daemon = 1;
+            break;
         default:
             return ARGP_ERR_UNKNOWN;
     }
@@ -34,7 +35,7 @@ void arg_parse(int argc, char **argv, struct arguments *args)
         {"productId", 'p', "PROD_ID", 0, "Product ID"},
         {"deviceId", 'd', "DEV_ID", 0, "Device ID"},
         {"deviceSecret", 's', "DEV_SECRET", 0, "Device Secret"},
-        {"daemon", 'f', "DAEMON", OPTION_ARG_OPTIONAL, "Daemon"},
+        {"daemon", 'f', NULL, 0, "Daemon"},
         {0}
     };
 

@@ -8,7 +8,7 @@ struct arguments{
     char *productId;
     char *deviceId;
     char *deviceSecret;
-    char *daemon;
+    int daemon;
 };
 
 void arg_parse(int argc, char **argv, struct arguments *args);

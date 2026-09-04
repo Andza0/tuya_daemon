@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "tuya_cacert.h"
 #include "tuya_log.h"
 #include "tuya_error_code.h"
@@ -32,10 +33,24 @@ int main(int argc, char *argv[]){
 
     arg_parse(argc, argv, args);
 
+    if(args->daemon == 1){
+        pid_t pid = fork();
+        if(pid > 0){
+            system_log(6, "Parent exiting..");
+            goto free_args;
+        }
+    }
+
+    if(setsid() < 0){
+        system_log(2, "Unable to create a new session");
+    }
+    else{
+        chdir("/");
+    }
+
     tuya_mqtt_context_t client;
 
     int ret;
-
     ret = tuya_mqtt_init(&client, &(const tuya_mqtt_config_t) {
         .host = "m1.tuyacn.com",
         .port = 8883,
@@ -60,7 +75,7 @@ int main(int argc, char *argv[]){
         system_log(1, "Unable to allocate memory for system info");
         inforet = -1;
     }
-
+    system_log(6, "Parent exiting..");
     struct ifaddrs *addrs = NULL;
 
     int ifaddrsret = 0;
@@ -68,6 +83,8 @@ int main(int argc, char *argv[]){
     if(ifaddrsret == -1){
         system_log(1, "Unable to get information for interfaces");
     }
+
+
     
     struct cpu_stats *old = malloc(sizeof(struct cpu_stats));
     assert(old != NULL);
@@ -130,9 +147,13 @@ int main(int argc, char *argv[]){
     if(old != NULL) {free(old);}
     if(new != NULL) {free(new);}
     if(usage != NULL) {free(usage);}
-    if(args != NULL) {free(args);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
+
+    free_args:
+    if(args != NULL){
+        free(args);
+    }
     return 0;
 }
 
