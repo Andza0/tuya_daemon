@@ -16,27 +16,26 @@ void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_m
 {
     TY_LOGI("on message id:%s, type:%d, code:%d", msg->msgid, msg->type, msg->code);
     switch (msg->type) {
-        case THING_TYPE_MODEL_RSP:
-            TY_LOGI("Model data:%s", msg->data_string);
-            break;
-
-        case THING_TYPE_PROPERTY_SET:
-            TY_LOGI("property set:%s", msg->data_string);
-            break;
-
-        case THING_TYPE_PROPERTY_REPORT_RSP:
-            break;
         case THING_TYPE_ACTION_EXECUTE:
-            TY_LOGI("action execute:%s", msg->data_string);
-            FILE *logfp = fopen("/tmp/tuya_action.log", "a");
-            if (logfp == NULL) {TY_LOGI("Unable to open log file"); break;}
-            fprintf(logfp, "%s\n", msg->data_string);
-            fclose(logfp);
+            if(check_action_code(msg->data_string, "write_log") == 0){
+                log_file(msg->data_string, "/tmp/tuya_action.log");
+            }
             break;
         default:
             break;
     }
     printf("\r\n");
+}
+
+int prepare_tuya(tuya_mqtt_context_t *client, tuya_mqtt_config_t *config)
+{
+    int ret = tuya_mqtt_init(client, config);
+    if(ret != OPRT_OK){
+        return ret;
+    }
+
+    ret = tuya_mqtt_connect(client);
+    return ret;
 }
 
 int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, time_t now)
@@ -51,13 +50,11 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
             continue;
         }
 
-        struct sockaddr_in *sa = (struct sockaddr_in *)i->ifa_addr;
         char ip_string[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &sa->sin_addr, ip_string, INET_ADDRSTRLEN);
+        parse_inet(i, IP_ADDR, ip_string);
 
-        struct sockaddr_in *mask = (struct sockaddr_in *)i->ifa_netmask;
-        char mask_string[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &mask->sin_addr, mask_string, INET_ADDRSTRLEN);
+        char netmask[INET_ADDRSTRLEN]; 
+        parse_inet(i, MASK, netmask);
 
         rx_bytes = get_rxtx(RX_BYTES, i);
         tx_bytes = get_rxtx(TX_BYTES, i);
@@ -74,7 +71,7 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
             (rx_bytes / (1024 * 1024)), now,
             (tx_bytes / (1024 * 1024)), now,
             ip_string, now,
-            mask_string, now);
+            netmask, now);
         
         return tuyalink_thing_property_report(client, NULL, data);
     }

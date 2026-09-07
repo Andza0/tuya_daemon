@@ -57,3 +57,18 @@ error_t arg_parse(struct argp *argp, int argc, char **argv, struct arguments *ar
 void print_argp_help(struct argp *argp, char **argv){
     argp_help(argp, stdout, ARGP_HELP_USAGE, argv[0]);
 }
+
+int init_arg_structs(struct arguments **args, struct argp **argp)
+{
+    *args = malloc(sizeof(struct arguments));
+    if(args == NULL){
+        system_log(1, "Unable to allocate memory for argument parsing");
+        return -1;
+    }
+
+    *argp = malloc(sizeof(struct argp));
+    if(args == NULL){
+        system_log(1, "Unable to allocate memory for argument parsing");
+        return -1;
+    }
+}

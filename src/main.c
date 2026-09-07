@@ -12,6 +12,7 @@
 #include "log_wrapper.h"
 #include <signal.h>
 #include "cpu_monitoring.h"
+#include "daemon.h"
 
 void sig_handler(int signum);
 void prepare_sig_handler(void);
@@ -21,16 +22,13 @@ sig_atomic_t sig_flag = 0;
 int main(int argc, char *argv[]){
     
     set_mask(7);
-    struct arguments *args = malloc(sizeof(struct arguments));
-    if(args == NULL){
-        system_log(0, "Failed to allocate memory for argument parsing.");
-        return 1;
+    struct arguments *args;
+    struct argp *argp;
+    int arg_ret = init_arg_structs(&args, &argp);
+    if(arg_ret == -1){
+        return -1;
     }
-    struct argp *argp = malloc(sizeof(struct argp));
-    if(argp == NULL){
-        system_log(0, "Failed to allocate memory for argument parsing.");
-        return 1;
-    } 
+
     arg_init(argc, argv, args, argp);
 
     if(argc < 3){
@@ -41,26 +39,16 @@ int main(int argc, char *argv[]){
 
     prepare_sig_handler();  
 
-
+    int ret;
     if(args->daemon == 1){
-        pid_t pid = fork();
-        if(pid > 0){
-            system_log(6, "Parent exiting..");
+        ret = start_daemon();
+        if(ret != 0){
             goto free_args;
         }
     }
 
-    if(setsid() < 0){
-        system_log(2, "Unable to create a new session");
-    }
-    else{
-        chdir("/");
-    }
-
     tuya_mqtt_context_t client;
-
-    int ret;
-    ret = tuya_mqtt_init(&client, &(const tuya_mqtt_config_t) {
+    ret = prepare_tuya(&client, &(tuya_mqtt_config_t) {
         .host = "m1.tuyacn.com",
         .port = 8883,
         .cacert = tuya_cacert_pem,
@@ -73,10 +61,11 @@ int main(int argc, char *argv[]){
         .on_disconnect = on_disconnect,
         .on_messages = on_messages
     });
-    assert(ret == OPRT_OK);
+    if(ret != OPRT_OK){
+        system_log(0, "Unable to init or connect to the cloud.");
+        goto free;
+    }
 
-    ret = tuya_mqtt_connect(&client);
-    assert(ret == OPRT_OK);
 
     int inforet = 0;
     struct sysinfo *info = malloc(sizeof(struct sysinfo));
@@ -84,7 +73,8 @@ int main(int argc, char *argv[]){
         system_log(1, "Unable to allocate memory for system info");
         inforet = -1;
     }
-    system_log(6, "Parent exiting..");
+
+
     struct ifaddrs *addrs = NULL;
 
     int ifaddrsret = 0;
@@ -94,16 +84,17 @@ int main(int argc, char *argv[]){
     }
 
 
-    
-    struct cpu_stats *old = malloc(sizeof(struct cpu_stats));
-    assert(old != NULL);
-    struct cpu_stats *new = malloc(sizeof(struct cpu_stats));
-    assert(old != NULL);
-    struct cpu_usage *usage = malloc(sizeof(struct cpu_usage));
-    assert(old != NULL);
-
-    ret = read_cpu_stats(old);
-    if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+    struct cpu_stats *old;
+    struct cpu_stats *new;
+    struct cpu_usage *usage;
+    int cpu_status = init_cpu_structs(&old, &new, &usage);
+    if(cpu_status == -1){
+        system_log(1, "Unable to allocate memory for cpu monitoring.");
+    }
+    else{
+        ret = read_cpu_stats(old);
+        if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+    }
 
     time_t last_report = 0;
     time_t now;
@@ -116,13 +107,16 @@ int main(int argc, char *argv[]){
             continue;
         }
 
-        ret = read_cpu_stats(new); //CPU usage report
-        if(ret != 10) {system_log(1, "Unable to read all cpu data");}
-        else{
-            calc_cpu_usage(old, new, usage);
-            send_cpu_usage_reports(&client, usage, now);
-            *old = *new;
+        if(cpu_status != -1){
+            ret = read_cpu_stats(new); //CPU usage report
+            if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+            else{
+                calc_cpu_usage(old, new, usage);
+                send_cpu_usage_reports(&client, usage, now);
+                *old = *new;
+            }
         }
+
 
 
         if(inforet == 0){ //sysinfo report
@@ -150,19 +144,15 @@ int main(int argc, char *argv[]){
 
     free:
     system_log(6, "Freeing system info memory.. ");
-    if(info != NULL){
-        free(info);
-    }
+    if(info != NULL){free(info);}
     if(old != NULL) {free(old);}
     if(new != NULL) {free(new);}
     if(usage != NULL) {free(usage);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
-
     free_args:
-    if(args != NULL){
-        free(args);
-    }
+    if(args != NULL){ free(args); }
+    if(argp != NULL){ free(argp); }
     return 0;
 }
 

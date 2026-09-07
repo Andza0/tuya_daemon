@@ -4,6 +4,8 @@
 //data types
 #define RX_BYTES 0
 #define TX_BYTES 1
+#define IP_ADDR 0
+#define MASK 1
 
 //errors
 #define UNKNOWN_TYPE -1
@@ -20,5 +22,6 @@
 #include <arpa/inet.h>
 
 long get_rxtx(int rxtx, struct ifaddrs *ifa);
+void parse_inet(struct ifaddrs *ifa, int type, char result[]);
 
 #endif

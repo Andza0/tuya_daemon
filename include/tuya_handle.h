@@ -16,6 +16,7 @@
 #include <ifaddrs.h>
 #include "net_interface_parser.h"
 #include "cpu_monitoring.h"
+#include "log_wrapper.h"
 
 
 void on_connected(tuya_mqtt_context_t* context, void* user_data);
@@ -24,5 +25,6 @@ void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_m
 int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now);
 int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, time_t now);
 int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu, time_t now);
+int prepare_tuya(tuya_mqtt_context_t *client, tuya_mqtt_config_t *config);
 
 #endif

@@ -1,8 +1,8 @@
 Programos pavadiniams turėtų būti aiškesnis, kuris tikrai atspindi tavo programą. Čia geriau būtų koks tuyad - done
 Be argumentu paleidziama programa turetu mesti --help zinute - done
 kazkur prie interface bus segfault (jeigu pvz 8 interface buna);
-Ne visi tuya lib'ai pas tave yra shared tipo, vienas yra static likęs;
-assert nenaudot (nes visi mallocai nera atlaisvinami klaidos atveju);
+Ne visi tuya lib'ai pas tave yra shared tipo, vienas yra static likęs; - done
+assert nenaudot (nes visi mallocai nera atlaisvinami klaidos atveju); - done
 Daemonizavimą perkelk į atskirą funkciją, bet jeigu pasižiūrėsi pavyzdžius, ten ir daugiau visokių dalykų yra
 Čia labai įdomus if'as Čia turėtum kaip du atskirus padaryti. Taip niekas nerašo (apie child p ifa)
 Pas tave labai didelis main'ais main'ą į mažesnius gabaliukus tau reikia skaidyti
