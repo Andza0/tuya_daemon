@@ -7,7 +7,7 @@ cmake -S . -B build
 cd build
 make
 
-sudo cp cdaemon /usr/local/bin
+sudo cp tuyad/usr/local/bin
 
 cd ..
-sudo cp cdaemon.service /etc/systemd/system/
+sudo cp tuyad.service /etc/systemd/system/

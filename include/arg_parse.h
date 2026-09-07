@@ -11,6 +11,8 @@ struct arguments{
     int daemon;
 };
 
-void arg_parse(int argc, char **argv, struct arguments *args);
+void arg_init(int argc, char **argv, struct arguments *args, struct argp *argp);
+error_t arg_parse(struct argp *argp, int argc, char **argv, struct arguments *args);
+void print_argp_help(struct argp *argp, char **argv);
 
 #endif

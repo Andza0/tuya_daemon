@@ -19,19 +19,28 @@ void prepare_sig_handler(void);
 sig_atomic_t sig_flag = 0;
 
 int main(int argc, char *argv[]){
-
-    prepare_sig_handler();
+    
     set_mask(7);
-    if(argc <= 1){
-        system_log(0, "Correct program launch format: -p {product id} -d {device id} -s {device secret}\n");
-        return 1;
-    }
     struct arguments *args = malloc(sizeof(struct arguments));
     if(args == NULL){
+        system_log(0, "Failed to allocate memory for argument parsing.");
         return 1;
     }
+    struct argp *argp = malloc(sizeof(struct argp));
+    if(argp == NULL){
+        system_log(0, "Failed to allocate memory for argument parsing.");
+        return 1;
+    } 
+    arg_init(argc, argv, args, argp);
 
-    arg_parse(argc, argv, args);
+    if(argc < 3){
+        print_argp_help(argp, argv);
+        return 1;
+    }
+    arg_parse(argp, argc, argv, args);
+
+    prepare_sig_handler();  
+
 
     if(args->daemon == 1){
         pid_t pid = fork();
