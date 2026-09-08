@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "tuya_cacert.h"
@@ -22,25 +21,21 @@ sig_atomic_t sig_flag = 0;
 int main(int argc, char *argv[]){
     
     set_mask(7);
-    struct arguments *args;
-    struct argp *argp;
-    int arg_ret = init_arg_structs(&args, &argp);
-    if(arg_ret == -1){
-        return -1;
-    }
+    struct arguments args = {0};
+    struct argp argp = {0};
 
-    arg_init(argc, argv, args, argp);
+    arg_init(argc, argv, &args, &argp);
 
     if(argc < 3){
-        print_argp_help(argp, argv);
+        print_argp_help(&argp, argv);
         return 1;
     }
-    arg_parse(argp, argc, argv, args);
+    arg_parse(&argp, argc, argv, &args);
 
     prepare_sig_handler();  
 
     int ret;
-    if(args->daemon == 1){
+    if(args.daemon == 1){
         start_daemon();
     }
 
@@ -50,8 +45,8 @@ int main(int argc, char *argv[]){
         .port = 8883,
         .cacert = tuya_cacert_pem,
         .cacert_len = sizeof(tuya_cacert_pem),
-        .device_id = args->deviceId,
-        .device_secret = args->deviceSecret,
+        .device_id = args.deviceId,
+        .device_secret = args.deviceSecret,
         .keepalive = 100,
         .timeout_ms = 2000,
         .on_connected = on_connected,
@@ -147,8 +142,6 @@ int main(int argc, char *argv[]){
     if(usage != NULL) {free(usage);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
-    if(args != NULL){ free(args); }
-    if(argp != NULL){ free(argp); }
     return 0;
 }
 

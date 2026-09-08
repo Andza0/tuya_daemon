@@ -43,38 +43,11 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, tim
     long rx_bytes;
     long tx_bytes;
 
-    int linescount = 5;
-    char data[64 * linescount];
-    for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
-        if(strcmp(i->ifa_name, "lo") == 0 || i->ifa_addr->sa_family != AF_INET){
-            continue;
-        }
-
-        char ip_string[INET_ADDRSTRLEN];
-        parse_inet(i, IP_ADDR, ip_string);
-
-        char netmask[INET_ADDRSTRLEN]; 
-        parse_inet(i, MASK, netmask);
-
-        rx_bytes = get_rxtx(RX_BYTES, i);
-        tx_bytes = get_rxtx(TX_BYTES, i);
-
-        snprintf(data, sizeof(data),
-            "{"
-            "\"in\":{\"value\":\"%s\",\"time\":%ld},"
-            "\"rx\":{\"value\":%ld,\"time\":%ld},"
-            "\"tx\":{\"value\":%ld,\"time\":%ld},"
-            "\"ip\":{\"value\":\"%s\",\"time\":%ld},"
-            "\"ms\":{\"value\":\"%s\",\"time\":%ld},"
-            "}",
-            i->ifa_name, now,
-            (rx_bytes / (1024 * 1024)), now,
-            (tx_bytes / (1024 * 1024)), now,
-            ip_string, now,
-            netmask, now);
-        
-        return tuyalink_thing_property_report(client, NULL, data);
-    }
+    int linescount = 3;
+    int sz = linescount * 64;
+    char data[sz];
+    get_all_interface_json(ifa, data, sz);
+    return tuyalink_thing_property_report(client, NULL, data);
     return 1;
 }
 
@@ -82,16 +55,7 @@ int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now)
 {
     int linescount = 3;
     char data[64 * linescount];
-    snprintf(data, sizeof(data),
-        "{"
-        "\"mt\":{\"value\":%ld,\"time\":%ld},"
-        "\"mf\":{\"value\":%ld,\"time\":%ld},"
-        "\"up\":{\"value\":\"%d:%d:%d\",\"time\":%ld}"
-        "}",
-        ((info->totalram)/ (1024 * 1024)), now,
-        ((info->freeram)/(1024 * 1024)), now,
-        (int)(info->uptime / 3600), (int)((info->uptime % 3600) / 60), (int)((info->uptime % 3600) % 60), now);
-
+    convert_sysinfo_json(info, data, 64*linescount);
     return tuyalink_thing_property_report(client, NULL, data);
 }
 

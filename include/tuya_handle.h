@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <sys/sysinfo.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "cJSON.h"
 #include "tuya_log.h"
@@ -17,6 +16,7 @@
 #include "net_interface_parser.h"
 #include "cpu_monitoring.h"
 #include "log_wrapper.h"
+#include "json_helper.h"
 
 
 void on_connected(tuya_mqtt_context_t* context, void* user_data);

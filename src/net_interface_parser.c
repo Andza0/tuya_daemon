@@ -31,7 +31,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
         }
         size_t pathsz = 64 + strlen(entry->d_name);
         char path[pathsz];
-        snprintf(path, pathsz, "/sys/class/netresult/%s/statistics", entry->d_name);
+        snprintf(path, pathsz, "/sys/class/net/%s/statistics", entry->d_name);
         DIR *data_dir = opendir(path);
 
         char *filename;
@@ -53,6 +53,7 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
         snprintf(filepath, filepathsz, "%s/%s", path, filename);
         FILE *data_file = fopen(filepath, "r");
         if(data_file == NULL){
+            system_log(1, filepath);
             closedir(data_dir);
             closedir(dirp);
             return OPENFILE_ERR;
