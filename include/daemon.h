@@ -3,8 +3,9 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include "log_wrapper.h"
 
-int start_daemon();
+void start_daemon();
 
 #endif

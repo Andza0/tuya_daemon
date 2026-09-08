@@ -41,10 +41,7 @@ int main(int argc, char *argv[]){
 
     int ret;
     if(args->daemon == 1){
-        ret = start_daemon();
-        if(ret != 0){
-            goto free_args;
-        }
+        start_daemon();
     }
 
     tuya_mqtt_context_t client;
@@ -150,7 +147,6 @@ int main(int argc, char *argv[]){
     if(usage != NULL) {free(usage);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
-    free_args:
     if(args != NULL){ free(args); }
     if(argp != NULL){ free(argp); }
     return 0;

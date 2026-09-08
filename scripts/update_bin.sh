@@ -1,3 +1,3 @@
 #!/bin/sh
 
-sudo cp build/cdaemon /usr/local/bin
+sudo cp build/tuyad /usr/local/bin

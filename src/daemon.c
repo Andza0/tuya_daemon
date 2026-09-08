@@ -1,20 +1,26 @@
 #include "daemon.h"
 
-int start_daemon()
+void start_daemon()
 {
     pid_t pid = fork();
     if(pid > 0){
         system_log(6, "Parent exiting..");
-        return pid;
+        exit(0);
     }
 
     if(setsid() < 0){
         system_log(2, "Unable to create a new session");
-        return -1;
+        exit(0);
+    }
+
+    pid = fork();
+    if(pid > 0){
+        system_log(6, "First child exiting..");
+        exit(0);
     }
     if(chdir("/") < 0){
         system_log(2, "Unable to change directory");
-        return -1;
+        exit(0);
     }
 
 }
