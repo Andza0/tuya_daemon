@@ -1,14 +1,18 @@
 #include "net_interface_parser.h"
 
 
-void parse_inet(struct ifaddrs *ifa, int type, char result[])
-{
-    if(ifa == NULL){
-        result = NULL;
-        system_log(2, "Given interface is NULL");
-        return;
+int parse_inet(struct ifaddrs *ifa, int type, char result[])
+{   
+    if(result == NULL){
+        return -1;
     }
-    struct sockaddr_in *data;
+
+    if(ifa == NULL){
+        result[0] = '\0';
+        return -1;
+    }
+
+    struct sockaddr_in *data = NULL;
     switch(type){
         case IP_ADDR:
             data = (struct sockaddr_in *)ifa->ifa_addr;
@@ -17,17 +21,38 @@ void parse_inet(struct ifaddrs *ifa, int type, char result[])
             data = (struct sockaddr_in *)ifa->ifa_netmask;
             break;
         default:
-            break;
+            return -1;
     }
-    inet_ntop(AF_INET, &data->sin_addr, result, INET_ADDRSTRLEN);
+    
+    if(data == NULL){
+        result[0] = '\0';
+        return -1;
+    }
+
+    if(data->sin_family != AF_INET){
+        result[0] = '\0';
+        return -1;
+    }
+
+    if((inet_ntop(AF_INET, &data->sin_addr, result, INET_ADDRSTRLEN)) == NULL){
+        result[0] = '\0';
+        return -1;
+    }
+
+    return 0;
 }
 
 long get_rxtx(int rxtx, struct ifaddrs *ifa)
 {
+    if(ifa == NULL || ifa->ifa_name == NULL){
+        return NULL_PTR;
+    }
+
     DIR *dirp = opendir("/sys/class/net");
     if(dirp == NULL){
         return OPENDIR_ERR;
     }
+
     struct dirent *entry;
     while((entry = readdir(dirp)) != NULL)
     {   
@@ -38,6 +63,10 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
         char path[pathsz];
         snprintf(path, pathsz, "/sys/class/net/%s/statistics", entry->d_name);
         DIR *data_dir = opendir(path);
+        if(data_dir == NULL){
+            closedir(dirp);
+            return OPENDIR_ERR;
+        }
 
         char *filename;
 
@@ -50,6 +79,8 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
             filename = "tx_bytes";
             break;
         default:
+            closedir(dirp);
+            closedir(data_dir);
             return UNKNOWN_TYPE;
         }
 
@@ -85,4 +116,6 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
         fclose(data_file);
         return ret;
     }
+    closedir(dirp);
+    return OPENFILE_ERR;
 }

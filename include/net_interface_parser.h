@@ -13,6 +13,7 @@
 #define OPENFILE_ERR -3
 #define LINE_RET_NULL -4
 #define BAD_FORMAT -5
+#define NULL_PTR -6
 
 #include <sys/types.h>
 #include <ifaddrs.h>
@@ -24,6 +25,6 @@
 #include "log_wrapper.h"
 
 long get_rxtx(int rxtx, struct ifaddrs *ifa);
-void parse_inet(struct ifaddrs *ifa, int type, char result[]);
+int parse_inet(struct ifaddrs *ifa, int type, char result[]);
 
 #endif

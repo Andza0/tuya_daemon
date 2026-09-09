@@ -3,6 +3,7 @@
 void on_connected(tuya_mqtt_context_t* context, void* user_data)
 {
     TY_LOGI("on connected");
+
 }
 
 void on_disconnect(tuya_mqtt_context_t* context, void* user_data)
@@ -40,6 +41,9 @@ int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa)
 {
     int linescount = 0;
     for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next) { linescount++; }
+    if(linescount == 0){
+        return 0;
+    }
     int sz = linescount * 128;
     char interfaces[sz];
     get_all_interface_json(ifa, interfaces, sz);
