@@ -3,6 +3,11 @@
 
 void parse_inet(struct ifaddrs *ifa, int type, char result[])
 {
+    if(ifa == NULL){
+        result = NULL;
+        system_log(2, "Given interface is NULL");
+        return;
+    }
     struct sockaddr_in *data;
     switch(type){
         case IP_ADDR:
@@ -69,11 +74,15 @@ long get_rxtx(int rxtx, struct ifaddrs *ifa)
         }
         char *end;
         long ret = strtol(line, &end, 10);
-        if(line != end){
+        if(line == end){
             closedir(data_dir);
             closedir(dirp);
             fclose(data_file);
-            return ret;
+            return BAD_FORMAT;
         }
+        closedir(data_dir);
+        closedir(dirp);
+        fclose(data_file);
+        return ret;
     }
 }

@@ -4,12 +4,18 @@ void convert_interface_json(struct ifaddrs *i, char dest[], size_t sz)
 {
     char ip_string[INET_ADDRSTRLEN];
     parse_inet(i, IP_ADDR, ip_string);
+    if(ip_string == NULL){
+        snprintf(ip_string, INET_ADDRSTRLEN, "-");
+    }
 
     char netmask[INET_ADDRSTRLEN]; 
     parse_inet(i, MASK, netmask);
+    if(netmask == NULL){
+        snprintf(netmask, INET_ADDRSTRLEN, "-");
+    }
 
     long rx_bytes = get_rxtx(RX_BYTES, i);
-    if(rx_bytes == OPENDIR_ERR || rx_bytes == OPENFILE_ERR || rx_bytes == UNKNOWN_TYPE || rx_bytes == LINE_RET_NULL){
+    if(rx_bytes == OPENDIR_ERR || rx_bytes == OPENFILE_ERR || rx_bytes == UNKNOWN_TYPE || rx_bytes == LINE_RET_NULL || rx_bytes == BAD_FORMAT){
         char error[64];
         snprintf(error, 64, "Unable to read received bytes, returned: %ld", rx_bytes);
         system_log(1, error);
@@ -17,7 +23,7 @@ void convert_interface_json(struct ifaddrs *i, char dest[], size_t sz)
     long rx = rx_bytes / (1024 * 1024);
 
     long tx_bytes = get_rxtx(TX_BYTES, i);
-    if(tx_bytes == OPENDIR_ERR || tx_bytes == OPENFILE_ERR || tx_bytes == UNKNOWN_TYPE || tx_bytes == LINE_RET_NULL){
+    if(tx_bytes == OPENDIR_ERR || tx_bytes == OPENFILE_ERR || tx_bytes == UNKNOWN_TYPE || tx_bytes == LINE_RET_NULL || tx_bytes == BAD_FORMAT){
         char error[64];
         snprintf(error, 64, "Unable to read transceived bytes, returned: %ld", tx_bytes);
         system_log(1, error);

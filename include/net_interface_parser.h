@@ -12,6 +12,7 @@
 #define OPENDIR_ERR -2
 #define OPENFILE_ERR -3
 #define LINE_RET_NULL -4
+#define BAD_FORMAT -5
 
 #include <sys/types.h>
 #include <ifaddrs.h>
