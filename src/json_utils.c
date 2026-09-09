@@ -29,8 +29,8 @@ void convert_interface_json(struct ifaddrs *i, char dest[], size_t sz)
     "\"name\": \"%s\","
     "\"ip_addr\": \"%s\","
     "\"netmask\": \"%s\","
-    "\"rx\": \"%ld\","
-    "\"rx\": \"%ld\","
+    "\"rx\": %ld,"
+    "\"tx\": %ld"
     "}", i->ifa_name, ip_string, netmask, rx, tx);
 
 }
@@ -38,6 +38,7 @@ void convert_interface_json(struct ifaddrs *i, char dest[], size_t sz)
 void get_all_interface_json(struct ifaddrs *ifa, char result[], size_t sz)
 {
     char interface[128];
+    result[0] = '\0';
     for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next){
         if(strcmp(i->ifa_name, "lo") == 0 || i->ifa_addr->sa_family != AF_INET){
             continue;
@@ -52,8 +53,8 @@ void convert_sysinfo_json(struct sysinfo *info, char dest[], size_t sz)
     snprintf(dest, sz,
     "{"
     "\"total_ram\":%ld,"
-    "\"free_ram\":\"%ld\","
-    "\"uptime\":\"%d:%d:%d\","
+    "\"free_ram\":%ld,"
+    "\"uptime\":\"%d:%d:%d\""
     "}",
     ((info->totalram)/ (1024 * 1024)),
     ((info->freeram)/(1024 * 1024)),
@@ -64,9 +65,27 @@ void convert_cpu_json(struct cpu_usage *cpu, char dest[], size_t sz)
 {
     snprintf(dest, sz,
         "{"
-        "\"active\" : %ld,"
-        "\"idle\": %ld,}"
+        "\"active\" : %ld, "
+        "\"idle\": %ld"
         "}",
         cpu->active,
         cpu->idle);
+}
+
+int check_action_code(char *msg, char *action_code)
+{
+    cJSON *root = cJSON_Parse(msg);
+    if(root == NULL){
+        system_log(1, "Unable to read the received json from the cloud.");
+        return -1;
+    }
+    cJSON *action = cJSON_GetObjectItemCaseSensitive(root, "actionCode");
+    if(!cJSON_IsString(action) || action_code == NULL){
+        cJSON_Delete(root);
+        return -1;
+    }
+
+    int res = strcmp(action->valuestring, action_code);
+    cJSON_Delete(root);
+    return res;
 }

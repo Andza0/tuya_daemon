@@ -38,18 +38,13 @@ void system_log(int LOG,char *msg)
     }
 }
 
-int check_action_code(char *msg, char *action_code)
-{
-    cJSON *data = cJSON_Parse(msg);
-    cJSON *action = cJSON_GetObjectItem(data, "actionCode");
-
-    return strcmp(action->valuestring, action_code);
-}
-
 void log_file(char *msg, char *file)
 {
     FILE *logfp = fopen(file, "a");
-    if (logfp == NULL) {system_log(3, "Unable to open log file");}
+    if (logfp == NULL) {
+        system_log(3, "Unable to open log file");
+        return;
+    }
     fprintf(logfp, "%s\n", msg);
     fclose(logfp);
 }

@@ -3,8 +3,6 @@
 void on_connected(tuya_mqtt_context_t* context, void* user_data)
 {
     TY_LOGI("on connected");
-
-    //tuyalink_thing_property_report(context, NULL, "{\"power\":{\"value\":1234,\"time\":1631708204231}}");
 }
 
 void on_disconnect(tuya_mqtt_context_t* context, void* user_data)
@@ -38,37 +36,33 @@ int prepare_tuya(tuya_mqtt_context_t *client, tuya_mqtt_config_t *config)
     return ret;
 }
 
-int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, time_t now)
+int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa)
 {
-    long rx_bytes;
-    long tx_bytes;
+    int linescount = 0;
+    for(struct ifaddrs *i = ifa; i != NULL; i = i->ifa_next) { linescount++; }
+    int sz = linescount * 128;
+    char interfaces[sz];
+    get_all_interface_json(ifa, interfaces, sz);
+    char data[32 + sizeof(interfaces)];
+    snprintf(data, 32 + sizeof(interfaces), "{ \"interfaces\" : [%s]}", interfaces);
 
+    return tuyalink_thing_property_report(client, NULL, data);
+}
+
+int send_sysinfo_reports(tuya_mqtt_context_t *client, struct sysinfo *info)
+{
     int linescount = 3;
-    int sz = linescount * 64;
+    size_t sz = linescount * 72;
     char data[sz];
-    get_all_interface_json(ifa, data, sz);
-    return tuyalink_thing_property_report(client, NULL, data);
-    return 1;
-}
-
-int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now)
-{
-    int linescount = 3;
-    char data[64 * linescount];
-    convert_sysinfo_json(info, data, 64*linescount);
+    convert_sysinfo_json(info, data, sz);
     return tuyalink_thing_property_report(client, NULL, data);
 }
 
-int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu, time_t now)
+int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu)
 {
     int linescount = 2;
-    char data[64 * linescount];
-    snprintf(data, sizeof(data),
-        "{"
-        "\"at\":{\"value\":%ld,\"time\":%ld},"
-        "\"it\":{\"value\":%ld,\"time\":%ld}"
-        "}",
-        cpu->active, now,
-        cpu->idle, now);
+    size_t sz = linescount * 64;
+    char data[sz];
+    convert_cpu_json(cpu, data, sz);
     return tuyalink_thing_property_report(client, NULL, data);
 }

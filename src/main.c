@@ -25,12 +25,15 @@ int main(int argc, char *argv[]){
     struct argp argp = {0};
 
     arg_init(argc, argv, &args, &argp);
-
-    if(argc < 3){
+    error_t parseret = arg_parse(&argp, argc, argv, &args);
+    if(parseret != 0 ||
+    args.deviceId == NULL ||
+    args.deviceSecret == NULL ||
+    args.productId == NULL){
         print_argp_help(&argp, argv);
         return 1;
     }
-    arg_parse(&argp, argc, argv, &args);
+
 
     prepare_sig_handler();  
 
@@ -39,7 +42,7 @@ int main(int argc, char *argv[]){
         start_daemon();
     }
 
-    tuya_mqtt_context_t client;
+    tuya_mqtt_context_t client = {0};
     ret = prepare_tuya(&client, &(tuya_mqtt_config_t) {
         .host = "m1.tuyacn.com",
         .port = 8883,
@@ -59,16 +62,9 @@ int main(int argc, char *argv[]){
     }
 
 
-    int inforet = 0;
-    struct sysinfo *info = malloc(sizeof(struct sysinfo));
-    if(info == NULL){
-        system_log(1, "Unable to allocate memory for system info");
-        inforet = -1;
-    }
-
+    struct sysinfo info = {0};
 
     struct ifaddrs *addrs = NULL;
-
     int ifaddrsret = 0;
     ifaddrsret = getifaddrs(&addrs);
     if(ifaddrsret == -1){
@@ -76,17 +72,11 @@ int main(int argc, char *argv[]){
     }
 
 
-    struct cpu_stats *old;
-    struct cpu_stats *new;
-    struct cpu_usage *usage;
-    int cpu_status = init_cpu_structs(&old, &new, &usage);
-    if(cpu_status == -1){
-        system_log(1, "Unable to allocate memory for cpu monitoring.");
-    }
-    else{
-        ret = read_cpu_stats(old);
-        if(ret != 10) {system_log(1, "Unable to read all cpu data");}
-    }
+    struct cpu_stats old = {0};
+    struct cpu_stats new = {0};
+    struct cpu_usage usage = {0};
+    ret = read_cpu_stats(&old);
+    if(ret != 10) {system_log(1, "Unable to read all cpu data");}
 
     time_t last_report = 0;
     time_t now;
@@ -99,47 +89,37 @@ int main(int argc, char *argv[]){
             continue;
         }
 
-        if(cpu_status != -1){
-            ret = read_cpu_stats(new); //CPU usage report
-            if(ret != 10) {system_log(1, "Unable to read all cpu data");}
-            else{
-                calc_cpu_usage(old, new, usage);
-                send_cpu_usage_reports(&client, usage, now);
-                *old = *new;
-            }
+        ret = read_cpu_stats(&new); 
+        if(ret != 10) {system_log(1, "Unable to read all cpu data");}
+        else{
+            calc_cpu_usage(&old, &new, &usage);
+            send_cpu_usage_reports(&client, &usage);
+            old = new;
         }
 
-
-
-        if(inforet == 0){ //sysinfo report
-            ret = sysinfo(info);
+        ret = sysinfo(&info);
+        if(ret < 0){
+            system_log(1, "Cannot read data from sys info");
+        }
+        else{
+            ret = send_sysinfo_reports(&client, &info);
             if(ret < 0){
-                system_log(1, "Cannot read data from sys info");
-            }
-            else{
-                ret = send_reports(&client, info, now);
-                if(ret < 0){
-                    system_log(1, "Failed to send sysinfo report");
-                }
+                system_log(1, "Failed to send sysinfo report");
             }
         }
 
         if(ifaddrsret == 0){ //network interface report
-            ret = send_interface_reports(&client, addrs, now);
+            ret = send_interface_reports(&client, addrs);
             if(ret < 0){
                 system_log(1, "Failed to send interface report");
             }
-            last_report = now;
         }
+        last_report = now;
         tuya_mqtt_loop(&client);
     }
 
     free:
     system_log(6, "Freeing system info memory.. ");
-    if(info != NULL){free(info);}
-    if(old != NULL) {free(old);}
-    if(new != NULL) {free(new);}
-    if(usage != NULL) {free(usage);}
     freeifaddrs(addrs);
     tuya_mqtt_deinit(&client);
     return 0;

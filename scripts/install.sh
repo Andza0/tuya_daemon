@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./clean.sh
+./scripts/clean.sh
 
 mkdir build
 cmake -S . -B build

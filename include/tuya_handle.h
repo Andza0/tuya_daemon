@@ -22,9 +22,9 @@
 void on_connected(tuya_mqtt_context_t* context, void* user_data);
 void on_disconnect(tuya_mqtt_context_t* context, void* user_data);
 void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_message_t* msg);
-int send_reports(tuya_mqtt_context_t *client, struct sysinfo *info, time_t now);
-int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa, time_t now);
-int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu, time_t now);
+int send_sysinfo_reports(tuya_mqtt_context_t *client, struct sysinfo *info);
+int send_interface_reports(tuya_mqtt_context_t *client, struct ifaddrs *ifa);
+int send_cpu_usage_reports(tuya_mqtt_context_t *client, struct cpu_usage *cpu);
 int prepare_tuya(tuya_mqtt_context_t *client, tuya_mqtt_config_t *config);
 
 #endif

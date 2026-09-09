@@ -24,6 +24,5 @@ struct cpu_usage{
 
 int read_cpu_stats(struct cpu_stats *cpu);
 int calc_cpu_usage(struct cpu_stats *old, struct cpu_stats *new, struct cpu_usage *result);
-int init_cpu_structs(struct cpu_stats **old, struct cpu_stats **new, struct cpu_usage **usage);
 
 #endif

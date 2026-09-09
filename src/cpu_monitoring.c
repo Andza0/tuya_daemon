@@ -37,13 +37,3 @@ int calc_cpu_usage(struct cpu_stats *old, struct cpu_stats *new, struct cpu_usag
     result->active = active_delta;
     result->idle = idle_delta;
 }
-
-int init_cpu_structs(struct cpu_stats **old, struct cpu_stats **new, struct cpu_usage **usage)
-{
-    *old = malloc(sizeof(struct cpu_stats));
-    if(old == NULL){return -1;}
-    *new = malloc(sizeof(struct cpu_stats));
-    if(new == NULL){return -1;}
-    *usage = malloc(sizeof(struct cpu_usage));
-    if(usage == NULL){return -1;}
-}
